@@ -1,0 +1,43 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract WaterContract {
+    address public owner;
+    mapping(address => uint256) public waterStock;
+
+    event WaterPurchased(address indexed buyer, uint256 amount);
+    event WaterConsumed(address indexed consumer, uint256 amount);
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only the owner can call this function");
+        _;
+    }
+
+    modifier sufficientStock(uint256 amount) {
+        require(waterStock[msg.sender] >= amount, "Insufficient stock");
+        _;
+    }
+
+    constructor() {
+        owner = msg.sender;
+    }
+
+    function purchaseWater(uint256 amount) external payable {
+        assert(amount > 0);
+
+        uint256 cost = amount * 1; // Price per water pack
+        waterStock[msg.sender] += amount;
+        if (msg.value > cost) {
+            payable(msg.sender).transfer(msg.value - cost);
+        }
+
+        emit WaterPurchased(msg.sender, amount);
+    }
+
+    function consumeWater(uint256 amount) external onlyOwner sufficientStock(amount) {
+        require(amount <= 1, "Cannot consume more than 1 pack at once");
+        waterStock[msg.sender] -= amount;
+
+        emit WaterConsumed(msg.sender, amount);
+    }
+}
